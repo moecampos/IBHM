@@ -44,7 +44,7 @@ plot.b.map2 <- function(coords,b,pal=hcl.colors(12,"Zissou 1"),pch = 15, ...) {
 }
 
 
-run_INLA <- function(data, bounds, tau.m, PCprior = FALSE, a = 1.1){
+run_INLA <- function(data, bounds, tau.m, PCprior = FALSE, a1 = 1.1, a2 = 3, a3 = 1, ExpCov = FALSE){
   #Retrieve data info
   n.m <- sum(data$source=="SDM")
   n.g <- sum(data$source=="Gen")
@@ -69,7 +69,7 @@ run_INLA <- function(data, bounds, tau.m, PCprior = FALSE, a = 1.1){
   if(sum(p.m >= tau.m)==1){
     keep <- (pointDistance(sm1,mesh$loc[,1:2],lonlat = FALSE) <= radi) + keep
   } else{
-    for(i in 1:sum(p.m >= tau.m)){
+    for(i in 1:nrow(sm1)){
       keep <- (pointDistance(sm1[i,],mesh$loc[,1:2],lonlat = FALSE) <= radi) + keep
     }
   }
@@ -87,14 +87,16 @@ run_INLA <- function(data, bounds, tau.m, PCprior = FALSE, a = 1.1){
                              B.tau = cbind(logtau0, -1, -zone, nu),
                              B.kappa = cbind(logkappa0, 0, 0, -1),
                              theta.prior.mean = c(0,1,0), 
-                             theta.prior.prec = rep(1, 3))
-  spde <- inla.spde2.pcmatern(mesh, prior.range = c(1, 0.01), 
-                              prior.sigma = c(3, 0.01)) #alpha= 3/2 for exp, alpha = 2 for matern
+                             theta.prior.prec = rep(0.1, 3))
+  
+  spde <- inla.spde2.pcmatern(mesh, prior.range = c(a3, 0.01), 
+                              prior.sigma = c(a2, 0.01),
+                              alpha = 2*(1-ExpCov)+3/2*ExpCov) #alpha= 3/2 for exp, alpha = 2 for matern
   #Priors
   hyper <- list(theta = list(prior = 'normal', param = c(1, 0.001)))
   fam.control <- list(list(),list(),list())
   if(PCprior){
-    prior.g <- list(prior = "pc.prec", param = c(a,0.01),
+    prior.g <- list(prior = "pc.prec", param = c(a1,0.01),
                     fixed = FALSE)
     
     pg <- list(hyper = list(prec = prior.g))
@@ -139,13 +141,12 @@ run_INLA <- function(data, bounds, tau.m, PCprior = FALSE, a = 1.1){
               data = inla.stack.data(stack),
               control.predictor = list(link = 1, A = inla.stack.A(stack)),
               control.family = fam.control,
-              control.compute = list(config = TRUE),
-              control.inla = list(control.correct = list(enable = TRUE, factor = 10)))
+              control.compute = list(config = TRUE))
   
   return(list(INLA_results = res, mesh = mesh))
 }
 
-run_INLA_noSDM <- function(data, bounds, PCprior = FALSE, a = 1.1){
+run_INLA_noSDM <- function(data, bounds, PCprior = FALSE, a1 = 1.1, a2 = 3, a3 = 1, ExpCov = FALSE){
   #Retrieve data info
   n.g <- sum(data$source=="Gen")
   n.p <- sum(data$source=="Pol")
@@ -162,14 +163,15 @@ run_INLA_noSDM <- function(data, bounds, PCprior = FALSE, a = 1.1){
   #####Non-stationary SPDE- eventually include as function arguments
   nu <- 1
   alpha <- 2
-
-  spde <- inla.spde2.pcmatern(mesh, prior.range = c(1, 0.01), 
-                              prior.sigma = c(3, 0.01)) #alpha= 3/2 for exp, alpha = 2 for matern
+  
+  spde <- inla.spde2.pcmatern(mesh, prior.range = c(a3, 0.01), 
+                              prior.sigma = c(a2, 0.01),
+                              alpha = 2*(1-ExpCov)+3/2*ExpCov) #alpha= 3/2 for exp, alpha = 2 for matern
   #Priors
   hyper <- list(theta = list(prior = 'normal', param = c(1, 0.001)))
   fam.control <- list(list(),list())
   if(PCprior){
-    prior.g <- list(prior = "pc.prec", param = c(a,0.01),
+    prior.g <- list(prior = "pc.prec", param = c(a1,0.01),
                     fixed = FALSE)
     
     pg <- list(hyper = list(prec = prior.g))
@@ -236,7 +238,7 @@ run_INLA_linSDM <- function(data, bounds, tau.m, PCprior = FALSE, a = 1.1){
   y.m <- data$Y[1:n.m]
   y.g <- data$Y[n.m+1:n.g]
   y.p <- data$Y[n.m+n.g+1:n.p]
-  p.m <- pnorm(y.m)
+  p.m <- p.m
   
   
   max.edge <- 4

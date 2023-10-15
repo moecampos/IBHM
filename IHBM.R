@@ -19,13 +19,14 @@ source("FUN.R")
 ##Name 4 is used for saving the mesh, as it cannot be recovered from the INLA output
 
 
-IBHM <- function(db, bounds.r, PCa, tau.m = NULL, pcp = TRUE, SDM_treat = "Logistic", 
+IBHM <- function(db, bounds.r, coo.all, tau.m = NULL, pcp = TRUE, 
+                 SDM_treat = "Logistic", 
                  file_names = NULL, save = TRUE){
   ini <- Sys.time()
   
-  if(SDM_treat == "None") results <- run_INLA_noSDM(db, bounds.r, PCprior = pcp, a = PCa) 
-  if(SDM_treat == "Logistic") results <- run_INLA(db, bounds.r, tau.m, PCprior = pcp, a = PCa)
-  if(SDM_treat == "Linear") results <- run_INLA_linSDM(db, bounds.r, tau.m, PCprior = pcp, a = PCa)
+  if(SDM_treat == "None") results <- run_INLA_noSDM(db, bounds.r, PCprior = pcp) 
+  if(SDM_treat == "Logistic") results <- run_INLA(db, bounds.r, tau.m, PCprior = pcp)
+  if(SDM_treat == "Linear") results <- run_INLA_linSDM(db, bounds.r, tau.m, PCprior = pcp)
   
   res <- results$INLA_results
   mesh <- results$mesh

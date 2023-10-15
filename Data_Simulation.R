@@ -33,7 +33,7 @@ coo.p <- coo.s[p.s,]
 p.smp <- sample((1:nrow(coords.r))[1:nrow(coords.r)%notin%smp],v) #prediction sample
 coo.pr <- coords.r[p.smp,]
 
-coo.all <- rbind(coo.s,coo.pr)
+coo.all <- rbind(coo.s,coo.pr) #has the coordinates for the observed sample sites and extra prediction sites
 
 rhoX <- 3
 sigX <- 0.8 
@@ -51,7 +51,7 @@ tau.m <- 0.502
 
 x <- book.rMatern(1, coo.all, range = rhoX, sigma = sigX) #function in FUN.R
 enough <- FALSE 
-while(!enough){ #this loop makes sure there is at lesat one true point in Sm1
+while(!enough){ #this loop makes sure there is at least one true point in Sm1
   z <- book.rMatern(1, coo.m, range = rhoZ, sigma = sigZ)
   l.m <- a.m + b.m*(mu + x[sdm.s]) + z
   sm1 <- l.m > log(tau.m/(1-tau.m))
@@ -64,6 +64,7 @@ p.m <- exp(l.m)/(1+exp(l.m)) #SDM probabilities are dichotomized based on tau.m
 y.g <- mu + x[g.s] + rnorm(n.g, sd = sqrt(s2g)) #genetic data
 y.p <- a.p + b.p*(mu + x[p.s]) + rnorm(n.p, sd = sqrt(s2p)) #pollen data
 
-rm(list= ls()[!(ls() %in% c('p.m','y.g', 'y.p'))])
+rm(list= ls()[!(ls() %in% c('p.m','y.g', 'y.p',
+                            'coo.m','coo.g','coo.p', 'coo.all'))])
 
 
